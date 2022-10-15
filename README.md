@@ -67,8 +67,8 @@ CLIENT_ID=
 CLIENT_SECRET=
 # OAuth token expiry timeframe. Required to refresh token before it expires and connection is interrupted
 TOKEN_EXPIRY=3540000
-# Frequency to ping connection and make sure its active
-PING=5000
+# Frequency to ping server
+PING=10000
 # OPERA Cloud chain for the subscription. Can be obtained from the app subscription in dev portal
 CHAIN=
 # (Optional) Enter a property Id to filter events generated only in that property
