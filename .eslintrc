@@ -23,6 +23,7 @@
                 }
             }
         ],
+        "@typescript-eslint/no-explicit-any": "off",
         "no-var": 1,
         "no-eval": "error",
         "quotes": [

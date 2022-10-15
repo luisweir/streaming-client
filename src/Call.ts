@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import got, { HTTPError } from 'got';
 
 export class Call {
@@ -22,11 +21,11 @@ export class Call {
         return response;
     }
 
-    public async getToken(url: string, options: any){
+    public async fetchToken(url: string, options: any){
         try {
-            console.log(`Obtaining oauth token from ${url}`);
+            console.log(`Obtaining access token from ${url}`);
             const token = await this.call(url, options);
-            console.log('Successfully obtained token');
+            console.log('Successfully fetched access token');
             return token;
         } catch (error) {
             console.error(error);
