@@ -11,7 +11,10 @@ GraphQL Streaming client for the [Oracle Hospitality Integration Platform (OHIP)
 
 ## Features
 
-Features listed here
+- Load connection/stream parameters from environment variables
+- Automatic refresh of OAuth tokens every 59 minutes
+- Automatic reconnection in case of network intermittent errors or server failures
+- Support for subscription parameters: chain, hotelId, offset (partial only) and delta.
 
 ## Installation
 
