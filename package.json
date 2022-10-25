@@ -23,6 +23,7 @@
       "dotenv": "^16.0.3",
       "got": "^12.5.2",
       "graphql-ws": "^5.11.2",
+      "tslog": "^3.3.4",
       "ws": "^8.9.0"
    },
    "devDependencies": {

@@ -1,3 +1,4 @@
+import { log } from './logger.js';
 import got, { HTTPError } from 'got';
 
 export class Call {
@@ -12,7 +13,7 @@ export class Call {
                     'httpStatusCode' : (err as HTTPError).response.statusCode,
                     'msg' : (err as HTTPError).response.statusMessage
                 };
-                console.error(error);
+                log.error(error);
                 throw error;
             })
             .then((res: any) => {
@@ -23,12 +24,12 @@ export class Call {
 
     public async fetchToken(url: string, options: any){
         try {
-            console.log(`Obtaining access token from ${url}`);
+            log.info(`Obtaining access token from ${url}`);
             const token = await this.call(url, options);
-            console.log('Successfully fetched access token');
+            log.info('Successfully fetched access token');
             return token;
         } catch (error) {
-            console.error(error);
+            log.error(error);
         }
     }
 }
