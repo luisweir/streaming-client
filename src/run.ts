@@ -1,8 +1,8 @@
 import dotenv from 'dotenv';
 import { log } from './logger.js';
 import { Call } from './Call.js';
-import { GraphQlSubClient } from './GraphQlSubClient.js';
 import { Hasher } from './Hasher.js';
+import { GsClient } from './GsClient.js';
 
 dotenv.config();
 
@@ -51,11 +51,12 @@ const oauthOptions = {
 const hasher: Hasher = new Hasher();
 const hash = await hasher.generateHash(env.APP_KEY);
 const wsUrl = env.WS_URL + env.SUBS_ENDPOINT + '?key=' + hash;
-const client: GraphQlSubClient = new GraphQlSubClient(env, wsUrl, oauthUrl, oauthOptions, call);
+const client: GsClient = new GsClient(env, wsUrl, oauthUrl, oauthOptions, call);
 
 // Start the connection
 try {
-    await client.execute(env);
+    // await client.execute(env);
+    client.start();
 } catch {
-    log.info('Error establishing socket connection');
+    log.fatal('Error establishing socket connection');
 }

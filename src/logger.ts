@@ -1,3 +1,11 @@
-import { Logger } from 'tslog';
+import dotenv from 'dotenv';
+import { Logger, ISettingsParam, TLogLevelName } from 'tslog';
+dotenv.config();
 
-export const log: Logger = new Logger();
+const logLevel: TLogLevelName = process.env.LOGLEVEL as TLogLevelName|| 'silly';
+const config: ISettingsParam = {
+    type: 'pretty',
+    minLevel: logLevel
+};
+export const log: Logger = new Logger(config);
+log.info(`logLevel=${logLevel}`);

@@ -24,9 +24,9 @@ export class Call {
 
     public async fetchToken(url: string, options: any){
         try {
-            log.info(`Obtaining access token from ${url}`);
+            log.debug(`Obtaining access token from ${url}`);
             const token = await this.call(url, options);
-            log.info('Successfully fetched access token');
+            log.debug('Successfully fetched access token');
             return token;
         } catch (error) {
             log.error(error);
