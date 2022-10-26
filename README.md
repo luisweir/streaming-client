@@ -80,6 +80,8 @@ CHAIN=
 # OFFSET=0
 # (Optional) Enter true to omit old and new values which are similar. Default is false
 # DELTA=true
+# Log level options: silly, trace, debug, info, warn, error, fatal
+LOGLEVEL=debug
 ```
 
 ## Run
