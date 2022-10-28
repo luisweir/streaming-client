@@ -12,8 +12,7 @@
       "lint-fix": "eslint -c .eslintrc --ext .ts ./src --fix ",
       "postinstall": "npx tsc",
       "dev": "tsc-watch --onSuccess \"node ./build/run.js\"",
-      "start": "npx tsc && node ./build/run.js",
-      "debug-git": "npx tsc && GIT_TRACE_CURL=true DEBUG=simple-git:* node ./build/run.js"
+      "start": "npx tsc && node --max-old-space-size=8192 ./build/run.js"
    },
    "author": "Luis Weir",
    "license": "ISC",

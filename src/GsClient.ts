@@ -5,14 +5,15 @@ import { Call } from './Call.js';
 
 export class GsClient {
 
-    public offset: number;
+    private offset: number;
     private env: any;
     private wsUrl: string;
     private oauthUrl: string;
     private oauthOptions: any;
     private call: Call;
     private activeSocket: WebSocket | null = null;
-    // private activeClient: Client | null = null;
+    private windowCount: number;
+    private stats: any[any];
 
     public constructor(env: any, wsUrl: string, oauthUrl: string, oauthOptions: any, call: Call) {
         this.offset = env.OFFSET;
@@ -21,6 +22,8 @@ export class GsClient {
         this.oauthUrl = oauthUrl;
         this.oauthOptions = oauthOptions;
         this.call = call;
+        this.windowCount = 0;
+        this.stats = [];
     }
 
     public getClient(): Client {
@@ -52,7 +55,7 @@ export class GsClient {
                     // }, env.TOKEN_EXPIRY );
                 },
                 closed: (event: any) => {
-                    log.error(`Socket closed with event ${event.code} ${event.reason}`);
+                    log.info(`Socket closed with event ${event.code} ${event.reason}`);
                 },
                 ping: (received) => {
                     if (!received) // sent
@@ -111,17 +114,17 @@ export class GsClient {
         const payload: SubscribePayload = {query};
         return new Promise<T>((resolve, reject) => {
             let result: any;
-            log.info(query);
+            log.info(`Posting ${query}`);
             if (client) {
                 client.subscribe<T>(payload, {
                     next: (data) => {
                         result = data;
                         this.offset = Number(result.data.newEvent.metadata.offset) + 1;
-                        log.info(`Processed ${result.data.newEvent.eventName} event with: offset ${result.data.newEvent.metadata.offset}, primaryKey ${result.data.newEvent.primaryKey}, HotelId ${(result.data.newEvent.hotelId) ? result.data.newEvent.hotelId : null}`);
+                        this.setStat(result.data.newEvent.eventName);
+                        log.debug(`Processed ${result.data.newEvent.eventName} event with: offset ${result.data.newEvent.metadata.offset}, primaryKey ${result.data.newEvent.primaryKey}, HotelId ${(result.data.newEvent.hotelId) ? result.data.newEvent.hotelId : null}`);
                     },
                     error: (error) => {
-                        log.error(error);
-                        reject();
+                        reject(error);
                     },
                     complete: () => resolve(result)
                 });
@@ -129,15 +132,43 @@ export class GsClient {
         });
     }
 
-    public start(): void {
+    private setStat(eventName: string): void {
+        this.windowCount = this.windowCount + 1; 
+        if (!this.stats[eventName]){
+            this.stats[eventName] = 1;
+        } else {
+            this.stats[eventName] = this.stats[eventName] + 1;
+        }
+    }
+
+    private printAndClearStats(): void {
+        const seconds = Math.floor(this.env.TOKEN_EXPIRY/1000);
+        log.info(`${this.windowCount} events processed in ${seconds} second window (${Math.floor(this.windowCount/seconds)} events/second)`);
+        if (this.windowCount > 0) {
+            console.table(this.stats);
+        }
+        this.stats = [];
+        this.windowCount = 0;
+    }
+
+    public async start(): Promise<void> {
         let client: Client = this.getClient();
-        this.subscribe(client);
+        try {
+            await this.subscribe(client);
+        } catch (error) {
+            log.error(error);
+        }
         setInterval(async() => {
             log.debug('Refreshing connection');
             client.dispose();
             this.activeSocket?.terminate();
+            this.printAndClearStats();
             client = this.getClient();
-            this.subscribe(client);
+            try {
+                await this.subscribe(client);
+            } catch (error) {
+                log.error(error);
+            }
         }, this.env.TOKEN_EXPIRY );
     }
 }
