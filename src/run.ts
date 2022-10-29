@@ -21,7 +21,9 @@ const env = {
     CHAIN: process.env.CHAIN,
     HOTELID: process.env.HOTELID,
     OFFSET: (process.env.OFFSET) ? Number(process.env.OFFSET) : undefined,
-    DELTA: (process.env.DELTA==='true') ? true : false
+    DELTA: (process.env.DELTA==='true') ? true : false,
+    STATS: (process.env.STATS==='true') ? true : false,
+    BUCKET: process.env.BUCKET || 'MINUTE'
 };
 
 // required to fetch OAuth Token

@@ -3,6 +3,16 @@ import WebSocket from 'ws';
 import { Client, createClient as createWSClient, SubscribePayload } from 'graphql-ws';
 import { Call } from './Call.js';
 
+enum bucketTypes {
+    HOUR = 'HOUR',
+    MINUTE = 'MINUTE',
+    SECOND = 'SECOND'
+}
+
+interface IStrIndex {
+    [index: string]: number;
+}
+
 export class GsClient {
 
     private offset: number;
@@ -13,7 +23,7 @@ export class GsClient {
     private call: Call;
     private activeSocket: WebSocket | null = null;
     private windowCount: number;
-    private stats: any[any];
+    private stats: IStrIndex;
 
     public constructor(env: any, wsUrl: string, oauthUrl: string, oauthOptions: any, call: Call) {
         this.offset = env.OFFSET;
@@ -23,7 +33,7 @@ export class GsClient {
         this.oauthOptions = oauthOptions;
         this.call = call;
         this.windowCount = 0;
-        this.stats = [];
+        this.stats = {};
     }
 
     public getClient(): Client {
@@ -109,7 +119,7 @@ export class GsClient {
     }
 
     // Function to start the connection
-    public async subscribe<T>(client: Client) {
+    public async subscribe<T>(client: Client): Promise<any>{
         const query = this.createQuery(this.env.CHAIN,this.offset,this.env.HOTELID,this.env.DELTA);
         const payload: SubscribePayload = {query};
         return new Promise<T>((resolve, reject) => {
@@ -134,41 +144,64 @@ export class GsClient {
 
     private setStat(eventName: string): void {
         this.windowCount = this.windowCount + 1; 
+        // total events per event type
         if (!this.stats[eventName]){
             this.stats[eventName] = 1;
         } else {
             this.stats[eventName] = this.stats[eventName] + 1;
         }
+         // total events per time bucket
+        const now = new Date(Date.now());
+        let timeBucket = '';
+        switch (this.env.BUCKET) {
+            case bucketTypes.HOUR:
+                timeBucket = `${now.getHours()}h`;
+                break;
+            case bucketTypes.MINUTE:
+                timeBucket = `${now.getHours()}h:${now.getMinutes()}m`;
+                break;
+            case bucketTypes.SECOND:
+                timeBucket = `${now.getHours()}h:${now.getMinutes()}m:${now.getSeconds()}s`;
+                break;
+        }
+        if (!this.stats[timeBucket]){
+            this.stats[timeBucket] = 1;
+        } else {
+            this.stats[timeBucket] = this.stats[timeBucket] + 1;
+        }
     }
 
     private printAndClearStats(): void {
         const seconds = Math.floor(this.env.TOKEN_EXPIRY/1000);
-        log.info(`${this.windowCount} events processed in ${seconds} second window (${Math.floor(this.windowCount/seconds)} events/second)`);
+        log.info(`${this.windowCount} events processed in ${seconds} second window`);
         if (this.windowCount > 0) {
             console.table(this.stats);
         }
-        this.stats = [];
+        this.stats = {};
         this.windowCount = 0;
     }
 
     public async start(): Promise<void> {
         let client: Client = this.getClient();
-        try {
-            await this.subscribe(client);
-        } catch (error) {
-            log.error(error);
-        }
-        setInterval(async() => {
-            log.debug('Refreshing connection');
+        const initiate = async() => {
+            log.debug('Initiating a new connection');
             client.dispose();
             this.activeSocket?.terminate();
-            this.printAndClearStats();
+            if (this.env.STATS) {
+                this.printAndClearStats();
+            }
             client = this.getClient();
             try {
                 await this.subscribe(client);
             } catch (error) {
                 log.error(error);
             }
+        };
+        setImmediate(async() => {
+            initiate();
+        });
+        setInterval(async() => {
+            initiate();
         }, this.env.TOKEN_EXPIRY );
     }
 }

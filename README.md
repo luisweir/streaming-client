@@ -82,6 +82,10 @@ CHAIN=
 # DELTA=true
 # Log level options: silly, trace, debug, info, warn, error, fatal
 LOGLEVEL=debug
+# Set Stats. true or false. Default is false.
+STATS=true
+# Stat bucket: HOUR, MINUTE (default) or SECOND
+BUCKET=SECOND
 ```
 
 ## Run
