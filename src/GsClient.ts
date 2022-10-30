@@ -181,6 +181,8 @@ export class GsClient {
         if (this.windowCount > 0) {
             console.table(this.statsSummary);
             if (this.env.TIME_BUCKET !== undefined) {
+                const  avg =  Math.round(Object.values(this.stats).reduce((prev: number, curr: number) => prev + curr) / Object.values(this.stats).length);
+                this.stats['AVERAGE'] = avg;
                 console.table(this.stats);
             }
         }
