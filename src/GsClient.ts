@@ -61,10 +61,6 @@ export class GsClient {
                 connected: (socket: any) => {
                     this.activeSocket = socket;
                     log.debug('Connected to socket');
-                    // setTimeout(() => {
-                    //     log.info('Refreshing connection with new token');
-                    //     activeSocket.close(4408, 'Token Expired');
-                    // }, env.TOKEN_EXPIRY );
                 },
                 closed: (event: any) => {
                     log.info(`Socket closed with event ${event.code} ${event.reason}`);
