@@ -133,7 +133,7 @@ export class GsClient {
                         result = data;
                         this.offset = Number(result.data.newEvent.metadata.offset) + 1;
                         this.setStat(result.data.newEvent.eventName);
-                        log.debug(`Processed ${result.data.newEvent.eventName} event with: offset ${result.data.newEvent.metadata.offset}, primaryKey ${result.data.newEvent.primaryKey}, HotelId ${(result.data.newEvent.hotelId) ? result.data.newEvent.hotelId : null}`);
+                        log.debug(`${result.data.newEvent.eventName}, offset ${result.data.newEvent.metadata.offset}, primaryKey ${result.data.newEvent.primaryKey}${(result.data.newEvent.hotelId) ? `, HotelID: ${result.data.newEvent.hotelId}` : ''}, Created at: ${result.data.newEvent.timestamp}`);
                     },
                     error: (error) => {
                         reject(error);
