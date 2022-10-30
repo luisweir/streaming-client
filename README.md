@@ -106,6 +106,5 @@ npm run dev
 
 The following features are in the backlog of this project:
 
-- Statistics for an specified timeframe (e.g. in the last 60 minutes x events per second were processed)
-- Route events to a given endpoint or database
 - Packaged as a container with multiple deployment options (docker compose and kubernetes)
+- Pluggable target transports such as Console (currently only one supported), REST endpoint, database
