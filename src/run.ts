@@ -23,7 +23,7 @@ const env = {
     OFFSET: (process.env.OFFSET) ? Number(process.env.OFFSET) : undefined,
     DELTA: (process.env.DELTA==='true') ? true : false,
     STATS: (process.env.STATS==='true') ? true : false,
-    BUCKET: process.env.BUCKET || 'MINUTE'
+    TIME_BUCKET: process.env.TIME_BUCKET || undefined
 };
 
 // required to fetch OAuth Token

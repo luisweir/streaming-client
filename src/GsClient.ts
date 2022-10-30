@@ -23,6 +23,7 @@ export class GsClient {
     private call: Call;
     private activeSocket: WebSocket | null = null;
     private windowCount: number;
+    private statsSummary: IStrIndex;
     private stats: IStrIndex;
 
     public constructor(env: any, wsUrl: string, oauthUrl: string, oauthOptions: any, call: Call) {
@@ -33,6 +34,7 @@ export class GsClient {
         this.oauthOptions = oauthOptions;
         this.call = call;
         this.windowCount = 0;
+        this.statsSummary = {};
         this.stats = {};
     }
 
@@ -145,29 +147,31 @@ export class GsClient {
     private setStat(eventName: string): void {
         this.windowCount = this.windowCount + 1; 
         // total events per event type
-        if (!this.stats[eventName]){
-            this.stats[eventName] = 1;
+        if (!this.statsSummary[eventName]){
+            this.statsSummary[eventName] = 1;
         } else {
-            this.stats[eventName] = this.stats[eventName] + 1;
+            this.statsSummary[eventName] = this.statsSummary[eventName] + 1;
         }
          // total events per time bucket
-        const now = new Date(Date.now());
-        let timeBucket = '';
-        switch (this.env.BUCKET) {
-            case bucketTypes.HOUR:
-                timeBucket = `${now.getHours()}h`;
-                break;
-            case bucketTypes.MINUTE:
-                timeBucket = `${now.getHours()}h:${now.getMinutes()}m`;
-                break;
-            case bucketTypes.SECOND:
-                timeBucket = `${now.getHours()}h:${now.getMinutes()}m:${now.getSeconds()}s`;
-                break;
-        }
-        if (!this.stats[timeBucket]){
-            this.stats[timeBucket] = 1;
-        } else {
-            this.stats[timeBucket] = this.stats[timeBucket] + 1;
+        if (this.env.TIME_BUCKET !== undefined) {
+            const now = new Date(Date.now());
+            let timeBucket = '';
+            switch (this.env.TIME_BUCKET) {
+                case bucketTypes.HOUR:
+                    timeBucket = `${now.getHours()}h`;
+                    break;
+                case bucketTypes.MINUTE:
+                    timeBucket = `${now.getHours()}h:${now.getMinutes()}m`;
+                    break;
+                case bucketTypes.SECOND:
+                    timeBucket = `${now.getHours()}h:${now.getMinutes()}m:${now.getSeconds()}s`;
+                    break;
+            }
+            if (!this.stats[timeBucket]){
+                this.stats[timeBucket] = 1;
+            } else {
+                this.stats[timeBucket] = this.stats[timeBucket] + 1;
+            }
         }
     }
 
@@ -175,9 +179,13 @@ export class GsClient {
         const seconds = Math.floor(this.env.TOKEN_EXPIRY/1000);
         log.info(`${this.windowCount} events processed in ${seconds} second window`);
         if (this.windowCount > 0) {
-            console.table(this.stats);
+            console.table(this.statsSummary);
+            if (this.env.TIME_BUCKET !== undefined) {
+                console.table(this.stats);
+            }
         }
         this.stats = {};
+        this.statsSummary = {};
         this.windowCount = 0;
     }
 
