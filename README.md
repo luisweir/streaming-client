@@ -108,3 +108,4 @@ The following features are in the backlog of this project:
 
 - Packaged as a container with multiple deployment options (docker compose and kubernetes)
 - Pluggable target transports such as Console (currently only one supported), REST endpoint, database
+- Unit tests
