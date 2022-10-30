@@ -207,11 +207,7 @@ export class GsClient {
                 log.error(error);
             }
         };
-        setImmediate(async() => {
-            initiate();
-        });
-        setInterval(async() => {
-            initiate();
-        }, this.env.TOKEN_EXPIRY );
+        setImmediate(() => initiate());
+        setInterval(() => {initiate();}, this.env.TOKEN_EXPIRY);
     }
 }
