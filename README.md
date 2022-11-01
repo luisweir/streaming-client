@@ -30,7 +30,7 @@ Sample GraphQL Streaming client for the [Oracle Hospitality Integration Platform
   nvm use #to set the node version based on the .nvmrc file
   ```
 
-  > the above assumes you've installed nvm as described [here](https://github.com/nvm-sh/nvm), including [this step](this step: https://github.com/nvm-sh/nvm#nvmrc).
+  > the above assumes you've installed nvm as described [here](https://github.com/nvm-sh/nvm), including [this step](https://github.com/nvm-sh/nvm#nvmrc).
 
 - Install the node modules used in the project:
 
