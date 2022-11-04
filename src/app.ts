@@ -30,11 +30,12 @@ const env = {
 const call: Call = new Call();
 const method = 'POST';
 const oauthUrl = env.APIGW_URL + env.OAUTH_ENDPOINT;
+const authZ = Buffer.from(env.CLIENT_ID + ':' + env.CLIENT_SECRET).toString('base64');
 const oauthOptions = {
     method,
     headers: {
         'x-app-key': env.APP_KEY,
-        Authorization: 'Basic ' + Buffer.from(env.CLIENT_ID + ':' + env.CLIENT_SECRET).toString('base64')
+        Authorization: 'Basic ' + authZ
     },
     form: {
         'username': env.INTEGRATION_USER,
