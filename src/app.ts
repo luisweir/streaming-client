@@ -4,7 +4,7 @@ import { Call } from './Call.js';
 import { Hasher } from './Hasher.js';
 import { GsClient } from './GsClient.js';
 
-dotenv.config();
+dotenv.config({path: process.env.ENVPATH || './.env'});
 
 const env = {
     APIGW_URL: process.env.APIGW_URL || '',

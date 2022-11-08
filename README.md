@@ -92,6 +92,8 @@ STATS=true
 TIME_BUCKET=SECOND
 ```
 
+> To use an environment file other than `.env` set the environment variable `ENVPATH` to the relative path of the env file. E.g. `export ENVPATH=./dev.env`
+
 ## Run
 
 Once all required environment variables have been set, project can be run by executing:

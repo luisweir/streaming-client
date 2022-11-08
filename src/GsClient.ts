@@ -173,8 +173,8 @@ export class GsClient {
 
     private printAndClearStats(): void {
         const seconds = Math.floor(this.env.TOKEN_EXPIRY/1000);
-        log.info(`${this.windowCount} events processed in ${seconds} second window`);
         if (this.windowCount > 0) {
+            log.info(`${this.windowCount} events processed in ${seconds} second window`);
             console.table(this.statsSummary);
             if (this.env.TIME_BUCKET !== undefined) {
                 const  avg =  Math.round(Object.values(this.stats).reduce((prev: number, curr: number) => prev + curr) / Object.values(this.stats).length);

@@ -1,8 +1,8 @@
 import dotenv from 'dotenv';
 import { Logger, ISettingsParam, TLogLevelName } from 'tslog';
-dotenv.config();
+dotenv.config({path: process.env.ENVPATH || './.env'});
 
-const logLevel: TLogLevelName = process.env.LOGLEVEL as TLogLevelName|| 'silly';
+const logLevel: TLogLevelName = process.env.LOGLEVEL as TLogLevelName || 'silly';
 const config: ISettingsParam = {
     type: 'pretty',
     minLevel: logLevel
