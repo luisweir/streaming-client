@@ -2,6 +2,8 @@
 
 Sample GraphQL Streaming client for the [Oracle Hospitality Integration Platform (OHIP)](https://www.oracle.com/uk/industries/hospitality/integration-platform/) [Streaming API](https://blogs.oracle.com/hospitality/post/ohip-introduces-state-of-the-art-streaming-api-and-rich-analytics).
 
+> `Important`: This is *NOT* an official GraphQL Subscription Client for the OHIP Streaming API. It is a sample built for demo purposes. Use it at your own responsibility.
+
 - [Streaming Client](#streaming-client)
   - [Features](#features)
   - [Installation](#installation)
