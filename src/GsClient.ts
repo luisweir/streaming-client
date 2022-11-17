@@ -2,6 +2,7 @@ import { log } from './logger.js';
 import WebSocket from 'ws';
 import { Client, createClient as createWSClient, SubscribePayload } from 'graphql-ws';
 import { Call } from './Call.js';
+import { v4 as uuidv4 } from 'uuid';
 
 enum bucketTypes {
     HOUR = 'HOUR',
@@ -44,6 +45,11 @@ export class GsClient {
         const client: Client =  createWSClient({
             webSocketImpl: WebSocket,
             url: this.wsUrl,
+            generateID: () => {
+                const uuid = uuidv4();
+                log.debug(`Generated id: ${uuid}`);
+                return uuid;
+            },
             connectionParams: async() => {
                 log.debug(`Starting from offset ${ (this.offset) ? this.offset : 'latest'}`);
                 return {
