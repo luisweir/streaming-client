@@ -13,7 +13,7 @@ export class Call {
                     'httpStatusCode' : (err as HTTPError).response.statusCode,
                     'msg' : (err as HTTPError).response.statusMessage
                 };
-                log.error(error);
+                log.trace(err);
                 throw error;
             })
             .then((res: any) => {

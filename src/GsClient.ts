@@ -52,8 +52,15 @@ export class GsClient {
             },
             connectionParams: async() => {
                 log.debug(`Starting from offset ${ (this.offset) ? this.offset : 'latest'}`);
+                let token;
+                try {
+                    token = (await this.call.fetchToken(this.oauthUrl, this.oauthOptions)).access_toke;
+                } catch {
+                    log.error('Exiting application');
+                    process.abort();
+                }
                 return {
-                    'Authorization': `Bearer ${(await this.call.fetchToken(this.oauthUrl, this.oauthOptions)).access_token}`,
+                    'Authorization': `Bearer ${token}`,
                     'x-app-key': `${this.env.APP_KEY}`
                 };
             },
