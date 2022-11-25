@@ -54,7 +54,9 @@ export class GsClient {
                 log.debug(`Starting from offset ${ (this.offset) ? this.offset : 'latest'}`);
                 let token;
                 try {
-                    token = (await this.call.fetchToken(this.oauthUrl, this.oauthOptions)).access_toke;
+                    log.silly('Fetching access token');
+                    token = (await this.call.fetchToken(this.oauthUrl, this.oauthOptions)).access_token;
+                    log.silly(`Fetched token: ${token}`);
                 } catch {
                     log.error('Exiting application');
                     process.abort();
@@ -202,6 +204,9 @@ export class GsClient {
 
     public async start(): Promise<void> {
         let client: Client = this.getClient();
+        const delay = (ms: number) =>{
+            return new Promise( resolve => setTimeout(resolve, ms) );
+        };
         const initiate = async() => {
             log.debug('Initiating a new connection');
             client.dispose();
@@ -209,6 +214,7 @@ export class GsClient {
             if (this.env.STATS) {
                 this.printAndClearStats();
             }
+            delay(500);
             client = this.getClient();
             try {
                 await this.subscribe(client);

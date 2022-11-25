@@ -14,8 +14,10 @@ Sample GraphQL Streaming client for the [Oracle Hospitality Integration Platform
 ## Features
 
 - Load connection/stream parameters from environment variables
-- Automatic refresh of OAuth tokens every 59 minutes
+- Automatic refresh of OAuth tokens every 59 minutes (including 500ms delay between disconnecting and re-connecting to avoid `4409`)
 - Automatic reconnection in case of network intermittent errors or server failures
+- detail logs at different levels (info, debug, silly)
+- Statistics around number of messages processed per second, minute or hour as well as total number of messages received per event type
 - Support for subscription parameters: chain, hotelId, offset (partial only) and delta.
 
 ## Installation
