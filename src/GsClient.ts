@@ -214,7 +214,9 @@ export class GsClient {
             if (this.env.STATS) {
                 this.printAndClearStats();
             }
-            delay(500);
+            log.debug('delaying connecting to socket');
+            await delay(10000);
+            log.debug('Delayed ended');
             client = this.getClient();
             try {
                 await this.subscribe(client);
