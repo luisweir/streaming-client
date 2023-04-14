@@ -188,14 +188,12 @@ export class GsClient {
 
     private printAndClearStats(): void {
         const seconds = Math.floor(this.env.TOKEN_EXPIRY/1000);
-        if (this.windowCount > 0) {
-            log.info(`${this.windowCount} events processed in ${seconds} second window`);
-            console.table(this.statsSummary);
-            if (this.env.TIME_BUCKET !== undefined) {
-                const  avg =  Math.round(Object.values(this.stats).reduce((prev: number, curr: number) => prev + curr) / Object.values(this.stats).length);
-                this.stats['AVERAGE'] = avg;
-                console.table(this.stats);
-            }
+        log.info(`${this.windowCount} events processed in ${seconds} second window`);
+        console.table(this.statsSummary);
+        if (this.env.TIME_BUCKET !== undefined) {
+            const  avg =  Math.round(Object.values(this.stats).reduce((prev: number, curr: number) => prev + curr) / Object.values(this.stats).length);
+            this.stats['AVERAGE'] = avg;
+            console.table(this.stats);
         }
         this.stats = {};
         this.statsSummary = {};
@@ -211,12 +209,13 @@ export class GsClient {
             log.debug('Initiating a new connection');
             client.dispose();
             this.activeSocket?.terminate();
-            if (this.env.STATS) {
+            if (this.windowCount > 0) {
                 this.printAndClearStats();
+                const reconTimer = 10000;
+                log.debug(`Reconnecting client in ${reconTimer} ms`);
+                await delay(reconTimer);
             }
-            log.debug('delaying connecting to socket');
-            await delay(10000);
-            log.debug('Delayed ended');
+
             client = this.getClient();
             try {
                 await this.subscribe(client);
