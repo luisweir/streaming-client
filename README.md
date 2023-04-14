@@ -80,6 +80,8 @@ CLIENT_SECRET=
 TOKEN_EXPIRY=3540000
 # Frequency to ping server
 PING=10000
+# Time to wait between re-connecting. Recommended 10000 ms (10 seconds)
+TIMER=10000
 # OPERA Cloud chain for the subscription. Can be obtained from the app subscription in dev portal
 CHAIN=
 # (Optional) Enter a property Id to filter events generated only in that property

@@ -18,6 +18,7 @@ const env = {
     CLIENT_SECRET: process.env.CLIENT_SECRET || '',
     TOKEN_EXPIRY: Number(process.env.TOKEN_EXPIRY) || 3540000,
     PING: Number(process.env.TOKEN_EXPIRY) || 5000,
+    TIMER: Number(process.env.TIMER) || 10000,
     CHAIN: process.env.CHAIN,
     HOTELID: process.env.HOTELID,
     OFFSET: (process.env.OFFSET) ? Number(process.env.OFFSET) : undefined,

@@ -211,11 +211,9 @@ export class GsClient {
             this.activeSocket?.terminate();
             if (this.windowCount > 0) {
                 this.printAndClearStats();
-                const reconTimer = 10000;
-                log.debug(`Reconnecting client in ${reconTimer} ms`);
-                await delay(reconTimer);
             }
-
+            log.debug(`Connecting in ${this.env.TIMER} ms`);
+            await delay(this.env.TIMER);
             client = this.getClient();
             try {
                 await this.subscribe(client);
