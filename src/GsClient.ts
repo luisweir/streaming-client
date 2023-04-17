@@ -221,7 +221,21 @@ export class GsClient {
                 log.error(error);
             }
         };
+
+        const stop = async() => {
+            log.debug('Stopping the connection');
+            client.dispose();
+            this.activeSocket?.terminate();
+            delay(5000);
+            try {
+                process.exit(0);
+            } catch (error) {
+                log.error(error);
+            }
+        };
+
         setImmediate(() => initiate());
         setInterval(() => {initiate();}, this.env.TOKEN_EXPIRY);
+        setInterval(() => {stop();}, this.env.RUN_FOR);
     }
 }

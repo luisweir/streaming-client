@@ -96,6 +96,8 @@ LOGLEVEL=debug
 STATS=true
 # Stat bucket: HOUR, MINUTE (default) or SECOND. If not set time bucket won't be displayed, only summary.
 TIME_BUCKET=SECOND
+# Run streaming client for following time before shutting it down
+RUN_FOR=7080000
 ```
 
 > To use an environment file other than `.env` set the environment variable `ENVPATH` to the relative path of the env file. E.g. `export ENVPATH=./dev.env`
