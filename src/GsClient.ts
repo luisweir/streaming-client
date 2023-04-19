@@ -207,7 +207,7 @@ export class GsClient {
         };
         const initiate = async() => {
             log.debug('Initiating a new connection');
-            client.dispose();
+            await client.dispose();
             this.activeSocket?.terminate();
             if (this.windowCount > 0) {
                 this.printAndClearStats();
@@ -224,7 +224,7 @@ export class GsClient {
 
         const stop = async() => {
             log.debug('Stopping the connection');
-            client.dispose();
+            await client.dispose();
             this.activeSocket?.terminate();
             delay(5000);
             try {
