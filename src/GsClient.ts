@@ -14,20 +14,49 @@ interface IStrIndex {
     [index: string]: number;
 }
 
+export interface Environment {
+    APIGW_URL: string;
+    WS_URL: string;
+    OAUTH_ENDPOINT: string;
+    SUBS_ENDPOINT: string;
+    APP_KEY: string;
+    INTEGRATION_USER: string;
+    INTEGRATION_PASSWORD: string;
+    CLIENT_ID: string;
+    CLIENT_SECRET: string;
+    TOKEN_EXPIRY: number;
+    DELAY_BEFORE_RECONNECT: number;
+    RUN_FOR: number;
+    PING: number;
+    PING_TIMEOUT: number;
+    TIMER: number;
+    CHAIN: string | undefined;
+    HOTELID: string | undefined;
+    OFFSET: number | undefined;
+    DELTA: boolean;
+    STATS: boolean;
+    TIME_BUCKET: string | undefined;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-empty-interface
+interface OAuthOptions {
+    // Define the properties here based on your application's requirements
+}
+
 export class GsClient {
 
-    private offset: number;
-    private env: any;
+    private offset: number | undefined;
+    private env: Environment;
     private wsUrl: string;
     private oauthUrl: string;
-    private oauthOptions: any;
+    private oauthOptions: OAuthOptions;
     private call: Call;
     private activeSocket: WebSocket | null = null;
     private windowCount: number;
     private statsSummary: IStrIndex;
     private stats: IStrIndex;
 
-    public constructor(env: any, wsUrl: string, oauthUrl: string, oauthOptions: any, call: Call) {
+    public constructor(env: Environment, wsUrl: string, oauthUrl: string, oauthOptions: OAuthOptions, call: Call) {
         this.offset = env.OFFSET;
         this.env = env;
         this.wsUrl = wsUrl;
@@ -84,7 +113,7 @@ export class GsClient {
                     if (!received) // sent
                         timedOut = setTimeout(() => {
                             if (this.activeSocket && this.activeSocket.readyState === WebSocket.OPEN)
-                                this.activeSocket.close(4408, 'Request Timeout');
+                                this.activeSocket.close(this.env.PING_TIMEOUT, 'Ping Request Timeout');
                         }, this.env.PING / 2); // if pong not received within this timeframe then recreate connection
                 },
                 pong: (received) => {
@@ -98,8 +127,7 @@ export class GsClient {
         return client;
     }
 
-    // generate GraphQL Subscription query
-    private createQuery(chainCode: string | undefined, offset?: number | undefined, hotelCode?: string | undefined, delta?: boolean): any {
+    public createQuery(chainCode: string | undefined, offset?: number | undefined, hotelCode?: string | undefined, delta?: boolean): any {
         const query = `subscription {
                 newEvent (input:{chainCode: "${chainCode}"
                     ${ (offset!==undefined) ? `, offset: "${offset}"` : '' }
@@ -131,7 +159,6 @@ export class GsClient {
         return query.replace(/\s+/g, ' ').trim();
     }
 
-    // Function to start the connection
     public async subscribe<T>(client: Client): Promise<any>{
         const query = this.createQuery(this.env.CHAIN,this.offset,this.env.HOTELID,this.env.DELTA);
         const payload: SubscribePayload = {query};
@@ -202,18 +229,13 @@ export class GsClient {
 
     public async start(): Promise<void> {
         let client: Client = this.getClient();
-        const delay = (ms: number) =>{
-            return new Promise( resolve => setTimeout(resolve, ms) );
-        };
+
         const initiate = async() => {
             log.debug('Initiating a new connection');
-            await client.dispose();
-            this.activeSocket?.terminate();
-            if (this.windowCount > 0) {
-                this.printAndClearStats();
-            }
+            await this.disposeAndTerminate(client);
+            this.printAndClearStatsIfAny();
             log.debug(`Connecting in ${this.env.TIMER} ms`);
-            await delay(this.env.TIMER);
+            await this.delay(this.env.TIMER);
             client = this.getClient();
             try {
                 await this.subscribe(client);
@@ -224,9 +246,8 @@ export class GsClient {
 
         const stop = async() => {
             log.debug('Stopping the connection');
-            await client.dispose();
-            this.activeSocket?.terminate();
-            delay(5000);
+            await this.disposeAndTerminate(client);
+            this.delay(this.env.DELAY_BEFORE_RECONNECT);
             try {
                 process.exit(0);
             } catch (error) {
@@ -237,5 +258,20 @@ export class GsClient {
         setImmediate(() => initiate());
         setInterval(() => {initiate();}, this.env.TOKEN_EXPIRY);
         setInterval(() => {stop();}, this.env.RUN_FOR);
+    }
+
+    private async disposeAndTerminate(client: Client) {
+        await client.dispose();
+        this.activeSocket?.terminate();
+    }
+
+    private printAndClearStatsIfAny() {
+        if (this.windowCount > 0) {
+            this.printAndClearStats();
+        }
+    }
+
+    private delay(ms: number) {
+        return new Promise( resolve => setTimeout(resolve, ms) );
     }
 }

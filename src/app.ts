@@ -2,11 +2,11 @@ import dotenv from 'dotenv';
 import { log } from './logger.js';
 import { Call } from './Call.js';
 import { Hasher } from './Hasher.js';
-import { GsClient } from './GsClient.js';
+import { GsClient, Environment } from './GsClient.js';
 
 dotenv.config({path: process.env.ENVPATH || './.env'});
 
-const env = {
+const env: Environment = {
     APIGW_URL: process.env.APIGW_URL || '',
     WS_URL: process.env.WS_URL || '',
     OAUTH_ENDPOINT: process.env.OAUTH_ENDPOINT || '',
@@ -17,8 +17,10 @@ const env = {
     CLIENT_ID: process.env.CLIENT_ID || '',
     CLIENT_SECRET: process.env.CLIENT_SECRET || '',
     TOKEN_EXPIRY: Number(process.env.TOKEN_EXPIRY) || 3540000,
+    DELAY_BEFORE_RECONNECT: Number(process.env.DELAY_BEFORE_RECONNECT) || 5000,
     RUN_FOR: Number(process.env.RUN_FOR) || 7080000,
     PING: Number(process.env.PING) || 5000,
+    PING_TIMEOUT: Number(process.env.PING_TIMEOUT) || 4408,
     TIMER: Number(process.env.TIMER) || 10000,
     CHAIN: process.env.CHAIN,
     HOTELID: process.env.HOTELID,

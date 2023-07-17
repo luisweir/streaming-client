@@ -28,8 +28,6 @@
    },
    "devDependencies": {
       "@types/uuid": "8.3.4",
-      "@typescript-eslint/eslint-plugin": "^5.40.0",
-      "@typescript-eslint/parser": "^5.40.0",
       "eslint": "^8.25.0",
       "ts-node": "^10.9.1",
       "tsc-watch": "^5.0.3",

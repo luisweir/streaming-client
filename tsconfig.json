@@ -2,7 +2,7 @@
    "compilerOptions": {
       "lib": ["es2022"],
       "module": "esnext",
-      "target": "es2017",
+      "target": "es2022",
       "moduleResolution": "node",
       "emitDecoratorMetadata": true,
       "experimentalDecorators": true,

@@ -27,7 +27,7 @@ Sample GraphQL Streaming client for the [Oracle Hospitality Integration Platform
   To easily install multiple versions of node locally, it is recommended to first install [node version manager (nvm)](https://github.com/nvm-sh/nvm) and then install the require version as following:
 
   ```bash
-  NODE_VERSION=18.11.0
+  NODE_VERSION=20.0.0
   nvm install $NODE_VERSION
   nvm alias default $NODE_VERSION
   nvm use default #to set this version of node as default in your environment
