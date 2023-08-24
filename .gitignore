@@ -7,3 +7,4 @@ temp/
 .env*
 *.env
 .npmrc
+package-lock.json
