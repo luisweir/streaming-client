@@ -10,6 +10,8 @@ Sample GraphQL Streaming client for the [Oracle Hospitality Integration Platform
   - [Configuration](#configuration)
   - [Run](#run)
   - [To-do](#to-do)
+  - [License](#license)
+  - [Disclaimer](#disclaimer)
 
 ## Features
 
@@ -123,3 +125,13 @@ The following features are in the backlog of this project:
 - Packaged as a container with multiple deployment options (docker compose and kubernetes)
 - Pluggable target transports such as Console (currently only one supported), REST endpoint, database
 - Unit tests
+
+## License
+
+This project and all content within is available under the [Universal Permissive License v 1.0](https://oss.oracle.com/licenses/upl).
+
+See [LICENSE](LICENSE.txt) for more details.
+
+## Disclaimer
+
+This is NOT an official or supported project by Oracle. This project is intended solely for demonstration purposes and should be used at your own risk. No warranty or guarantee of reliability, accuracy, or completeness is provided. Any use of this project is solely at your own risk and we are not responsible for any losses or damages incurred.
