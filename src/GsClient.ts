@@ -184,7 +184,7 @@ export class GsClient {
                 },
                 ping: (received) => {
                     if (!received) // sent
-                        log.debug('Ping sent');
+                        log.silly('Ping sent');
                         timedOut = setTimeout(() => {
                             if (this.activeSocket && this.activeSocket.readyState === WebSocket.OPEN)
                                 this.activeSocket.close(this.env.PING_TIMEOUT, 'Ping Request Timeout');
@@ -192,7 +192,7 @@ export class GsClient {
                 },
                 pong: (received) => {
                     if (received) {
-                        log.debug('Pong received');
+                        log.silly('Pong received');
                         clearTimeout(timedOut);
                     } // pong is received, clear connection close timeout
                 },
