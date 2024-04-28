@@ -331,6 +331,8 @@ export class GsClient {
                 await this.subscribe(this.client);
             } catch (error) {
                 log.error(error);
+                log.debug(`Retrying in ${this.env.DELAY_BEFORE_RECONNECT} milliseconds`);
+                setTimeout(() => initiate(true), this.env.DELAY_BEFORE_RECONNECT);
             }
         };
 
