@@ -3,7 +3,8 @@ let monthIndex = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','N
 export function simplifyJSON(data: any): unknown {
 
     let new_properties = data.newEvent.detail.reduce((acc: any, curr: any) => {
-        acc[curr.elementName.toLowerCase().replaceAll(' ','_')] = curr.newValue || curr.oldValue;
+        if (curr.newValue !== curr.oldValue || curr.newValue !== '')
+            acc[curr.elementName.toLowerCase().replaceAll(' ','_')] = curr.newValue || curr.oldValue;
         return acc;
     }, {});
 

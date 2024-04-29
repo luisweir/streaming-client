@@ -218,7 +218,7 @@ export class GsClient {
                         log.silly('Ping sent');
                         timedOut = setTimeout(() => {
                             if (this.activeSocket && this.activeSocket.readyState === WebSocket.OPEN) {
-                                this.terminateClient('Ping timeout');
+                                this.startConsuming(true);
                             }
                         }, this.env.PING / 2); // if pong not received within this timeframe then recreate connection
                 },
@@ -282,7 +282,7 @@ export class GsClient {
                         this.setStat(result.data.newEvent.eventName);
                         // log.debug(`${result.data.newEvent.eventName}, offset ${result.data.newEvent.metadata.offset}, primaryKey ${result.data.newEvent.primaryKey}${(result.data.newEvent.hotelId) ? `, HotelID: ${result.data.newEvent.hotelId}` : ''}, Created at: ${result.data.newEvent.timestamp}`);
                         let simple = simplifyJSON(result.data);
-                        log.silly(JSON.stringify(result.data));
+                        // log.silly(JSON.stringify(result.data));
                         log.silly(JSON.stringify(simple));
                         if (this.kafkaProducer !== undefined) {
                             this.kafkaProducer.send({
@@ -354,42 +354,41 @@ export class GsClient {
         this.windowCount = 0;
     }
 
+    public async startConsuming (reconnect: boolean = false, reason: string = '') {
+        this.terminateClient(`Refreshing connection with new token`);
+        if (reconnect) {
+            log.debug(`Refreshing an existing connection in ${this.env.TIMER}ms (${reason})`);
+            await this.delay(this.env.TIMER);
+        } else {
+            log.debug('Initiating a new connection');
+        }
+        this.client = this.getClient();
+        if (this.kafka)
+            this.kafkaProducer = this.getProducer(this.kafka);
+        try {
+            await this.subscribe(this.client);
+        } catch (error) {
+            log.error(error);
+            log.debug(`Retrying in ${this.env.DELAY_BEFORE_RECONNECT} milliseconds`);
+            setTimeout(() => this.startConsuming(true), this.env.DELAY_BEFORE_RECONNECT);
+        }
+    }
+
+    public async stopConsuming (reconnect: boolean = false) {
+        try {
+            this.terminateClient('Application stopped by user');
+            process.exit(0);
+        } catch (error) {
+            log.error(error);
+        }
+    }
+
     public async start(): Promise<void> {
         this.client = undefined;
-
-        const initiate = async(reconnect: boolean = false) => {
-            this.terminateClient('Refreshing connection with new token');
-            if (reconnect) {
-                log.debug(`Refreshing an existing connection in ${this.env.TIMER} ms`);
-                await this.delay(this.env.TIMER);
-            } else {
-                log.debug('Initiating a new connection');
-            }
-            this.client = this.getClient();
-            if (this.kafka)
-                this.kafkaProducer = this.getProducer(this.kafka);
-            try {
-                await this.subscribe(this.client);
-            } catch (error) {
-                log.error(error);
-                log.debug(`Retrying in ${this.env.DELAY_BEFORE_RECONNECT} milliseconds`);
-                setTimeout(() => initiate(true), this.env.DELAY_BEFORE_RECONNECT);
-            }
-        };
-
-        const stop = async() => {
-            try {
-                this.terminateClient('Application stopped by user');
-                process.exit(0);
-            } catch (error) {
-                log.error(error);
-            }
-        };
-
-        setImmediate(() => initiate(false));
-        setInterval(() => {initiate(true);}, this.env.TOKEN_EXPIRY);
+        setImmediate(() => this.startConsuming(false));
+        setInterval(() => {this.startConsuming(true);}, this.env.TOKEN_EXPIRY);
         if (this.env.RUN_FOR > 0) {
-            setInterval(() => {stop();}, this.env.RUN_FOR);
+            setInterval(() => {this.stopConsuming();}, this.env.RUN_FOR);
         }
     }
 
