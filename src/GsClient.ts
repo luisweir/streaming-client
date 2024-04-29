@@ -218,6 +218,7 @@ export class GsClient {
                         log.silly('Ping sent');
                         timedOut = setTimeout(() => {
                             if (this.activeSocket && this.activeSocket.readyState === WebSocket.OPEN) {
+                                log.error('Ping timeout, refreshing connection');
                                 this.startConsuming(true);
                             }
                         }, this.env.PING / 2); // if pong not received within this timeframe then recreate connection
@@ -280,9 +281,7 @@ export class GsClient {
                         result = data;
                         this.offset = Number(result.data.newEvent.metadata.offset) + 1;
                         this.setStat(result.data.newEvent.eventName);
-                        // log.debug(`${result.data.newEvent.eventName}, offset ${result.data.newEvent.metadata.offset}, primaryKey ${result.data.newEvent.primaryKey}${(result.data.newEvent.hotelId) ? `, HotelID: ${result.data.newEvent.hotelId}` : ''}, Created at: ${result.data.newEvent.timestamp}`);
                         let simple = simplifyJSON(result.data);
-                        // log.silly(JSON.stringify(result.data));
                         log.silly(JSON.stringify(simple));
                         if (this.kafkaProducer !== undefined) {
                             this.kafkaProducer.send({

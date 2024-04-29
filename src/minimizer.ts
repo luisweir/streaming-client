@@ -4,7 +4,7 @@ export function simplifyJSON(data: any): unknown {
 
     let new_properties = data.newEvent.detail.reduce((acc: any, curr: any) => {
         if (curr.newValue !== curr.oldValue || curr.newValue !== '')
-            acc[curr.elementName.toLowerCase().replaceAll(' ','_')] = curr.newValue || curr.oldValue;
+            acc[curr.elementName.toLowerCase().replaceAll(' ','_')] = curr.newValue.replaceAll('&amp;','&') || curr.oldValue;
         return acc;
     }, {});
 
