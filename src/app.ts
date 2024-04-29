@@ -34,7 +34,8 @@ const env: Environment = {
     KAFKA_TOPIC: process.env.KAFKA_TOPIC,
     KAFKA_ENABLED: process.env.KAFKA_ENABLED==='true',
     KAFKA_USER: process.env.KAFKA_USER,
-    KAFKA_PASSWORD: process.env.KAFKA_PASSWORD
+    KAFKA_PASSWORD: process.env.KAFKA_PASSWORD,
+    KAFKA_CLIENT_ID: process.env.KAFKA_CLIENT_ID || 'gs-client',
 };
 
 // required to fetch OAuth Token

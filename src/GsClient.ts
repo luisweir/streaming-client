@@ -46,6 +46,7 @@ export interface Environment {
     KAFKA_ENABLED: boolean;
     KAFKA_USER: string | undefined;
     KAFKA_PASSWORD: string | undefined;
+    KAFKA_CLIENT_ID: string | undefined;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
@@ -103,15 +104,27 @@ export class GsClient {
                 }
             }
             this.kafka = new Kafka(kafkaConfig)
-            this.kafkaProducer = this.kafka.producer({
-                allowAutoTopicCreation: true,
-                transactionTimeout: 30000
-            })
-            this.kafkaProducer.connect()
+            this.kafkaProducer = this.getProducer(this.kafka);
         }
 
-        this.json_file = openSync('./events.json','w');
+        if (this.env.DUMP_TO_FILE)
+            this.json_file = openSync('./events.json','w');
+
         this.registerShutdownHook(); // make sure to dispose and terminate the client on shutdown
+    }
+
+    public getProducer(kafka: Kafka): any {
+        let kafkaProducer = kafka.producer({
+            allowAutoTopicCreation: true,
+            transactionTimeout: 30000,
+            maxInFlightRequests: 1
+        })
+        try {
+            kafkaProducer.connect()
+        } catch (e) {
+            log.error(e)
+        }
+        return kafkaProducer
     }
 
     public registerShutdownHook(): void {
@@ -252,17 +265,31 @@ export class GsClient {
                         let simple = simplifyJSON(result.data);
                         log.silly(JSON.stringify(simple));
                         if (this.kafkaProducer !== undefined) {
-                            this.kafkaProducer.send({
-                                topic: this.env.KAFKA_TOPIC || 'ohip-events',
-                                messages: [{
-                                    key: result.data.newEvent.metadata.uniqueEventId,
-                                    value: JSON.stringify(simple)
-                                }]
-                            });
+                            if (this.kafka && !this.kafkaProducer.isConnected()) {
+                                log.error('Kafka producer not available, Trying to reconnect.');
+                                this.getProducer(this.kafka)
+                            }
+                            if (!this.kafkaProducer.isConnected()) {
+                                log.error('Kafka producer still not available, panic');
+                                this.offset -= 2;
+                                this.terminateClient();
+                                process.abort();
+                            }
+                            if (this.kafkaProducer.isConnected()) {
+                                this.kafkaProducer.send({
+                                    topic: this.env.KAFKA_TOPIC || 'ohip-events',
+                                    messages: [{
+                                        key: result.data.newEvent.metadata.uniqueEventId,
+                                        value: JSON.stringify(simple)
+                                    }]
+                                });
+                            }
                         }
-                        writeSync(this.json_file,JSON.stringify(simplifyJSON(result.data)+'\n'));
+                        if (this.env.DUMP_TO_FILE && this.json_file !== undefined)
+                            writeSync(this.json_file,JSON.stringify(simplifyJSON(result.data)+'\n'));
                     },
                     error: (error) => {
+                        log.error(error);
                         reject(error);
                     },
                     complete: () => resolve(result)
