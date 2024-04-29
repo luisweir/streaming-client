@@ -5,7 +5,7 @@ import { Call } from './Call.js';
 import { simplifyJSON } from './minimizer.js';
 import { v4 as uuidv4 } from 'uuid';
 import {openSync, readFileSync, writeSync} from "node:fs";
-import { Kafka, KafkaConfig } from 'kafkajs';
+import {CompressionTypes, Kafka, KafkaConfig} from 'kafkajs';
 
 enum bucketTypes {
     HOUR = 'HOUR',
@@ -56,7 +56,7 @@ export const errorCodeMappings: { [id: string] : string; } = {
     '1003': 'Unsupported Data',
     '1004': '(For future)',
     '1005': 'No Status Received',
-    '1006': 'Abnormal Closure',
+    '1006': 'Abnormal Closure (Refresh ?)',
     '1007': 'Invalid frame payload data',
     '1008': 'Policy Violation',
     '1009': 'Message too big',
@@ -65,7 +65,8 @@ export const errorCodeMappings: { [id: string] : string; } = {
     '1012': 'Service Restart',
     '1013': 'Try Again Later',
     '1014': 'Bad Gateway',
-    '1015': 'TLS Handshake'
+    '1015': 'TLS Handshake',
+    '4409': 'Too many requests',
 };
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
@@ -145,17 +146,18 @@ export class GsClient {
     public registerShutdownHook(): void {
         process.on('SIGINT', () => {
             log.info('Received SIGINT signal');
-            this.terminateClient();
-            process.exit(0);
+            this.terminateClient('SIGINT');
+            setTimeout(process.exit(0), 2000);
         });
         process.on('SIGTERM', () => {
             log.info('Received SIGTERM signal');
-            this.terminateClient();
-            process.exit(0);
+            this.terminateClient('SIGTERM');
+            setTimeout(process.exit(0), 2000);
         });
     }
 
-    public terminateClient(): void {
+    public terminateClient(reason: string): void {
+        log.info(`Terminating client: ${reason}`)
         if (this.kafkaProducer !== undefined) {
             this.kafkaProducer.disconnect();
         }
@@ -163,6 +165,7 @@ export class GsClient {
             log.info(`Last offset processed: ${this.offset}`);
             writeSync(openSync('./offset.txt','w'),this.offset.toString());
         }
+        this.activeSocket?.send(`{"id":"${this.client_id}", "type":"complete"}`, (error) => {if (error) log.error(error);});
         if (this.client !== undefined) {
             this.disposeAndTerminate(this.client);
             this.printAndClearStatsIfAny();
@@ -208,14 +211,15 @@ export class GsClient {
                     log.debug('Connected to socket');
                 },
                 closed: (event: any) => {
-                    log.info(`Socket closed with event ${event.code} (${errorCodeMappings[event.code]}) ${event.reason}`);
+                    log.info(`Socket closed with event ${event.code} (${errorCodeMappings[event.code]}) :: ${event.reason}`);
                 },
                 ping: (received) => {
                     if (!received) // sent
                         log.silly('Ping sent');
                         timedOut = setTimeout(() => {
-                            if (this.activeSocket && this.activeSocket.readyState === WebSocket.OPEN)
-                                this.activeSocket.close(this.env.PING_TIMEOUT, 'Ping Request Timeout');
+                            if (this.activeSocket && this.activeSocket.readyState === WebSocket.OPEN) {
+                                this.terminateClient('Ping timeout');
+                            }
                         }, this.env.PING / 2); // if pong not received within this timeframe then recreate connection
                 },
                 pong: (received) => {
@@ -278,30 +282,29 @@ export class GsClient {
                         this.setStat(result.data.newEvent.eventName);
                         // log.debug(`${result.data.newEvent.eventName}, offset ${result.data.newEvent.metadata.offset}, primaryKey ${result.data.newEvent.primaryKey}${(result.data.newEvent.hotelId) ? `, HotelID: ${result.data.newEvent.hotelId}` : ''}, Created at: ${result.data.newEvent.timestamp}`);
                         let simple = simplifyJSON(result.data);
+                        log.silly(JSON.stringify(result.data));
                         log.silly(JSON.stringify(simple));
                         if (this.kafkaProducer !== undefined) {
-                            try {
-                                this.kafkaProducer.send({
-                                    topic: this.env.KAFKA_TOPIC || 'ohip-events',
-                                    messages: [{
-                                        key: result.data.newEvent.metadata.uniqueEventId,
-                                        value: JSON.stringify(simple)
-                                    }]
-                                });
-                                this.kafkaProducer.commit();
-                            } catch (e) {
-                                log.error(e);
-                                this.kafkaProducer.abort()
-                            }
+                            this.kafkaProducer.send({
+                                topic: this.env.KAFKA_TOPIC,
+                                acks: 1,
+                                compression: CompressionTypes.GZIP,
+                                messages: [{
+                                    key: result.data.newEvent.metadata.uniqueEventId,
+                                    value: JSON.stringify(simple)
+                                }]
+                            });
                         }
                         if (this.env.DUMP_TO_FILE && this.json_file !== undefined)
-                            writeSync(this.json_file,JSON.stringify(simplifyJSON(result.data)+'\n'));
+                            writeSync(this.json_file, JSON.stringify(simple));
                     },
                     error: (error) => {
-                        log.error(error);
                         reject(error);
                     },
-                    complete: () => resolve(result)
+                    complete: () => {
+                        log.silly('Connection Completed');
+                        resolve(result)
+                    }
                 });
             }
         });
@@ -352,10 +355,10 @@ export class GsClient {
     }
 
     public async start(): Promise<void> {
-        this.client = this.getClient();
+        this.client = undefined;
 
         const initiate = async(reconnect: boolean = false) => {
-            this.terminateClient();
+            this.terminateClient('Refreshing connection with new token');
             if (reconnect) {
                 log.debug(`Refreshing an existing connection in ${this.env.TIMER} ms`);
                 await this.delay(this.env.TIMER);
@@ -363,6 +366,8 @@ export class GsClient {
                 log.debug('Initiating a new connection');
             }
             this.client = this.getClient();
+            if (this.kafka)
+                this.kafkaProducer = this.getProducer(this.kafka);
             try {
                 await this.subscribe(this.client);
             } catch (error) {
@@ -373,9 +378,8 @@ export class GsClient {
         };
 
         const stop = async() => {
-            log.debug('Stopping the connection');
             try {
-                this.terminateClient();
+                this.terminateClient('Application stopped by user');
                 process.exit(0);
             } catch (error) {
                 log.error(error);
