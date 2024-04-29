@@ -2,7 +2,7 @@ import { log } from './logger.js';
 import WebSocket from 'ws';
 import { Client, createClient as createWSClient, SubscribePayload } from 'graphql-ws';
 import { Call } from './Call.js';
-import { simplifyJSON } from './minimizer.js';
+import { simplifyEvent } from './minimizer.js';
 import { v4 as uuidv4 } from 'uuid';
 import {openSync, readFileSync, writeSync} from "node:fs";
 import {CompressionTypes, Kafka, KafkaConfig} from 'kafkajs';
@@ -47,6 +47,8 @@ export interface Environment {
     KAFKA_USER: string | undefined;
     KAFKA_PASSWORD: string | undefined;
     KAFKA_CLIENT_ID: string | undefined;
+    SEGMENT_CONVERSION: boolean;
+    STACK_VALUES: boolean;
 }
 
 export const errorCodeMappings: { [id: string] : string; } = {
@@ -110,6 +112,7 @@ export class GsClient {
         this.windowCount = 0;
         this.statsSummary = {};
         this.stats = {};
+        this.kafka = undefined;
 
         if (this.env.KAFKA_ENABLED && this.env.KAFKA_HOST) {
             let kafkaConfig: KafkaConfig = {
@@ -281,8 +284,15 @@ export class GsClient {
                         result = data;
                         this.offset = Number(result.data.newEvent.metadata.offset) + 1;
                         this.setStat(result.data.newEvent.eventName);
-                        let simple = simplifyJSON(result.data);
-                        log.silly(JSON.stringify(simple));
+                        let event = result.data
+                        if (this.env.SEGMENT_CONVERSION) {
+                            try {
+                                event = simplifyEvent(result.data, this.env)
+                            } catch (error) {
+                                log.error(error);
+                            }
+                        }
+                        log.silly(JSON.stringify(event));
                         if (this.kafkaProducer !== undefined) {
                             this.kafkaProducer.send({
                                 topic: this.env.KAFKA_TOPIC,
@@ -290,12 +300,12 @@ export class GsClient {
                                 compression: CompressionTypes.GZIP,
                                 messages: [{
                                     key: result.data.newEvent.metadata.uniqueEventId,
-                                    value: JSON.stringify(simple)
+                                    value: JSON.stringify(event)
                                 }]
                             });
                         }
                         if (this.env.DUMP_TO_FILE && this.json_file !== undefined)
-                            writeSync(this.json_file, JSON.stringify(simple));
+                            writeSync(this.json_file, JSON.stringify(event));
                     },
                     error: (error) => {
                         reject(error);
@@ -375,7 +385,7 @@ export class GsClient {
 
     public async stopConsuming (reconnect: boolean = false) {
         try {
-            this.terminateClient('Application stopped by user');
+            if (!reconnect) this.terminateClient('Application stopped by user');
             process.exit(0);
         } catch (error) {
             log.error(error);
@@ -387,7 +397,7 @@ export class GsClient {
         setImmediate(() => this.startConsuming(false));
         setInterval(() => {this.startConsuming(true);}, this.env.TOKEN_EXPIRY);
         if (this.env.RUN_FOR > 0) {
-            setInterval(() => {this.stopConsuming();}, this.env.RUN_FOR);
+            setInterval(() => {this.stopConsuming(false);}, this.env.RUN_FOR);
         }
     }
 

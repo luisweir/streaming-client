@@ -30,6 +30,8 @@ const env: Environment = {
     TIME_BUCKET: process.env.TIME_BUCKET || undefined,
     GRAPHQL_CLIENT_ID: process.env.GRAPHQL_CLIENT_ID || undefined,
     DUMP_TO_FILE: process.env.DUMP_TO_FILE==='true',
+    SEGMENT_CONVERSION: process.env.SEGMENT_CONVERSION==='true',
+    STACK_VALUES: process.env.STACK_VALUES==='true',
     KAFKA_HOST: process.env.KAFKA_HOST,
     KAFKA_TOPIC: process.env.KAFKA_TOPIC || 'ohip-events',
     KAFKA_ENABLED: process.env.KAFKA_ENABLED==='true',
