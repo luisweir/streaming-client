@@ -49,6 +49,25 @@ export interface Environment {
     KAFKA_CLIENT_ID: string | undefined;
 }
 
+export const errorCodeMappings: { [id: string] : string; } = {
+    '1000': 'Normal Closure',
+    '1001': 'Going Away',
+    '1002': 'Protocol Error',
+    '1003': 'Unsupported Data',
+    '1004': '(For future)',
+    '1005': 'No Status Received',
+    '1006': 'Abnormal Closure',
+    '1007': 'Invalid frame payload data',
+    '1008': 'Policy Violation',
+    '1009': 'Message too big',
+    '1010': 'Missing Extension',
+    '1011': 'Internal Error',
+    '1012': 'Service Restart',
+    '1013': 'Try Again Later',
+    '1014': 'Bad Gateway',
+    '1015': 'TLS Handshake'
+};
+
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface OAuthOptions {
     // Define the properties here based on your application's requirements
@@ -193,7 +212,7 @@ export class GsClient {
                     log.debug('Connected to socket');
                 },
                 closed: (event: any) => {
-                    log.info(`Socket closed with event ${event.code} ${event.reason}`);
+                    log.info(`Socket closed with event ${event.code} (${errorCodeMappings[event.code]}) ${event.reason}`);
                 },
                 ping: (received) => {
                     if (!received) // sent
