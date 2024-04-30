@@ -79,8 +79,11 @@ export function simplifyEvent(data: any, env: Environment): unknown {
 
     // parse DateTime from "28-APR-24 06.18.59.028027 AM"
     let parts = data.newEvent.timestamp.replaceAll('.','-').replaceAll(' ','-').split('-');
-
     let aDate = new Date(parseInt('20' + parts[2]), monthIndex.indexOf(parts[1]), parseInt(parts[0]), parts[7] == 'PM' ? parseInt(parts[3]) + 12: parseInt(parts[3]), parseInt(parts[4]), parseInt(parts[5]), parseInt(parts[6])/1000);
+
+    // if it is 12AM, set it to 0 hours
+    if (parts[7] == 'AM' && parts[3] == '12') aDate.setHours(0)
+
     let isoDate = aDate.toISOString()
     isoDate = isoDate.replaceAll(parts[6].slice(0,3)+'Z', parts[6]+'Z')
 
