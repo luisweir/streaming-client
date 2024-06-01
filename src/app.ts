@@ -25,9 +25,19 @@ const env: Environment = {
     CHAIN: process.env.CHAIN,
     HOTELID: process.env.HOTELID,
     OFFSET: (process.env.OFFSET) ? Number(process.env.OFFSET) : undefined,
-    DELTA: (process.env.DELTA==='true') ? true : false,
-    STATS: (process.env.STATS==='true') ? true : false,
-    TIME_BUCKET: process.env.TIME_BUCKET || undefined
+    DELTA: process.env.DELTA==='true',
+    STATS: process.env.STATS==='true',
+    TIME_BUCKET: process.env.TIME_BUCKET || undefined,
+    GRAPHQL_CLIENT_ID: process.env.GRAPHQL_CLIENT_ID || undefined,
+    DUMP_TO_FILE: process.env.DUMP_TO_FILE==='true',
+    SEGMENT_CONVERSION: process.env.SEGMENT_CONVERSION==='true',
+    STACK_VALUES: process.env.STACK_VALUES==='true',
+    KAFKA_HOST: process.env.KAFKA_HOST,
+    KAFKA_TOPIC: process.env.KAFKA_TOPIC || 'ohip-events',
+    KAFKA_ENABLED: process.env.KAFKA_ENABLED==='true',
+    KAFKA_USER: process.env.KAFKA_USER,
+    KAFKA_PASSWORD: process.env.KAFKA_PASSWORD,
+    KAFKA_CLIENT_ID: process.env.KAFKA_CLIENT_ID || 'gs-client',
 };
 
 // required to fetch OAuth Token

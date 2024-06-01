@@ -22,9 +22,11 @@
       "dotenv": "^16.0.3",
       "got": "^12.5.2",
       "graphql-ws": "^5.11.2",
+      "npm": "^10.6.0",
       "tslog": "^3.3.4",
       "uuid": "9.0.0",
-      "ws": "^8.9.0"
+      "ws": "^8.9.0",
+      "kafkajs": "^2.2.4"
    },
    "devDependencies": {
       "@types/uuid": "8.3.4",

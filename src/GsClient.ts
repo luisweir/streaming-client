@@ -2,7 +2,10 @@ import { log } from './logger.js';
 import WebSocket from 'ws';
 import { Client, createClient as createWSClient, SubscribePayload } from 'graphql-ws';
 import { Call } from './Call.js';
+import { simplifyEvent } from './minimizer.js';
 import { v4 as uuidv4 } from 'uuid';
+import {openSync, readFileSync, writeSync} from "node:fs";
+import {CompressionTypes, Kafka, KafkaConfig} from 'kafkajs';
 
 enum bucketTypes {
     HOUR = 'HOUR',
@@ -36,7 +39,37 @@ export interface Environment {
     DELTA: boolean;
     STATS: boolean;
     TIME_BUCKET: string | undefined;
+    GRAPHQL_CLIENT_ID: string | undefined;
+    DUMP_TO_FILE: boolean;
+    KAFKA_HOST: string | undefined;
+    KAFKA_TOPIC: string | undefined;
+    KAFKA_ENABLED: boolean;
+    KAFKA_USER: string | undefined;
+    KAFKA_PASSWORD: string | undefined;
+    KAFKA_CLIENT_ID: string | undefined;
+    SEGMENT_CONVERSION: boolean;
+    STACK_VALUES: boolean;
 }
+
+export const errorCodeMappings: { [id: string] : string; } = {
+    '1000': 'Normal Closure',
+    '1001': 'Going Away',
+    '1002': 'Protocol Error',
+    '1003': 'Unsupported Data',
+    '1004': '(For future)',
+    '1005': 'No Status Received',
+    '1006': 'Abnormal Closure (Refresh ?)',
+    '1007': 'Invalid frame payload data',
+    '1008': 'Policy Violation',
+    '1009': 'Message too big',
+    '1010': 'Missing Extension',
+    '1011': 'Internal Error',
+    '1012': 'Service Restart',
+    '1013': 'Try Again Later',
+    '1014': 'Bad Gateway',
+    '1015': 'TLS Handshake',
+    '4409': 'Too many requests',
+};
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 interface OAuthOptions {
@@ -55,9 +88,22 @@ export class GsClient {
     private windowCount: number;
     private statsSummary: IStrIndex;
     private stats: IStrIndex;
+    private json_file: any;
+    private client: Client | undefined;
+    private client_id: any = undefined;
+    private kafka: Kafka | undefined;
+    private kafkaProducer: any | undefined;
 
     public constructor(env: Environment, wsUrl: string, oauthUrl: string, oauthOptions: OAuthOptions, call: Call) {
         this.offset = env.OFFSET;
+        if (this.offset === undefined) {
+            try {
+                this.offset = Number(readFileSync('./offset.txt'));
+                log.debug(`Continue from saved offset: ${this.offset}`)
+            } catch {
+                this.offset = undefined;
+            }
+        }
         this.env = env;
         this.wsUrl = wsUrl;
         this.oauthUrl = oauthUrl;
@@ -66,18 +112,79 @@ export class GsClient {
         this.windowCount = 0;
         this.statsSummary = {};
         this.stats = {};
+        this.kafka = undefined;
+
+        if (this.env.KAFKA_ENABLED && this.env.KAFKA_HOST) {
+            let kafkaConfig: KafkaConfig = {
+                brokers: this.env.KAFKA_HOST.split(','),
+                clientId: 'ohip-shovel'
+            };
+            if (this.env.KAFKA_USER !== undefined && this.env.KAFKA_PASSWORD !== undefined) {
+                kafkaConfig['sasl'] = {
+                    mechanism: 'plain',
+                        username: this.env.KAFKA_USER,
+                        password: this.env.KAFKA_PASSWORD,
+                }
+            }
+            this.kafka = new Kafka(kafkaConfig)
+            this.kafkaProducer = this.getProducer(this.kafka);
+        }
+
+        if (this.env.DUMP_TO_FILE)
+            this.json_file = openSync('./events.json','w');
+
+        this.registerShutdownHook(); // make sure to dispose and terminate the client on shutdown
+    }
+
+    public getProducer(kafka: Kafka): any {
+        let kafkaProducer = kafka.producer({
+            allowAutoTopicCreation: true,
+            transactionTimeout: 30000,
+            maxInFlightRequests: 1
+        })
+        kafkaProducer.connect()
+        return kafkaProducer
+    }
+
+    public registerShutdownHook(): void {
+        process.on('SIGINT', () => {
+            log.info('Received SIGINT signal');
+            this.terminateClient('SIGINT');
+            setTimeout(process.exit(0), 2000);
+        });
+        process.on('SIGTERM', () => {
+            log.info('Received SIGTERM signal');
+            this.terminateClient('SIGTERM');
+            setTimeout(process.exit(0), 2000);
+        });
+    }
+
+    public terminateClient(reason: string): void {
+        log.info(`Terminating client: ${reason}`)
+        if (this.kafkaProducer !== undefined) {
+            this.kafkaProducer.disconnect();
+        }
+        if (this.offset !== undefined) {
+            log.info(`Last offset processed: ${this.offset}`);
+            writeSync(openSync('./offset.txt','w'),this.offset.toString());
+        }
+        this.activeSocket?.send(`{"id":"${this.client_id}", "type":"complete"}`, (error) => {if (error) log.error(error);});
+        if (this.client !== undefined) {
+            this.disposeAndTerminate(this.client);
+            this.printAndClearStatsIfAny();
+        }
     }
 
     public getClient(): Client {
         log.debug('Creating client');
+        this.client_id = (this.env.GRAPHQL_CLIENT_ID !== undefined) ? this.env.GRAPHQL_CLIENT_ID : (this.client_id !== undefined) ? this.client_id : uuidv4();
+        log.debug(`Using client id: ${this.client_id}`);
         let timedOut: any;
-        const client: Client =  createWSClient({
+        return createWSClient({
             webSocketImpl: WebSocket,
             url: this.wsUrl,
             generateID: () => {
-                const uuid = uuidv4();
-                log.debug(`Generated id: ${uuid}`);
-                return uuid;
+                return this.client_id;
             },
             connectionParams: async() => {
                 log.debug(`Starting from offset ${ (this.offset) ? this.offset : 'latest'}`);
@@ -107,27 +214,33 @@ export class GsClient {
                     log.debug('Connected to socket');
                 },
                 closed: (event: any) => {
-                    log.info(`Socket closed with event ${event.code} ${event.reason}`);
+                    log.info(`Socket closed with event ${event.code} (${errorCodeMappings[event.code]}) :: ${event.reason}`);
                 },
                 ping: (received) => {
                     if (!received) // sent
+                        log.silly('Ping sent');
                         timedOut = setTimeout(() => {
-                            if (this.activeSocket && this.activeSocket.readyState === WebSocket.OPEN)
-                                this.activeSocket.close(this.env.PING_TIMEOUT, 'Ping Request Timeout');
+                            if (this.activeSocket && this.activeSocket.readyState === WebSocket.OPEN) {
+                                log.error('Ping timeout, refreshing connection');
+                                this.startConsuming(true);
+                            }
                         }, this.env.PING / 2); // if pong not received within this timeframe then recreate connection
                 },
                 pong: (received) => {
-                    if (received) clearTimeout(timedOut); // pong is received, clear connection close timeout
+                    if (received) {
+                        log.silly('Pong received');
+                        clearTimeout(timedOut);
+                    } // pong is received, clear connection close timeout
                 },
                 error: (error) => {
                     log.error(error);
                 }
             }
         });
-        return client;
     }
 
     public createQuery(chainCode: string | undefined, offset?: number | undefined, hotelCode?: string | undefined, delta?: boolean): any {
+        log.debug(`Creating query for chainCode: ${chainCode}, offset: ${(offset !== undefined) ? offset : 'latest'}, hotelCode: ${hotelCode}, delta: ${delta}`)
         const query = `subscription {
                 newEvent (input:{chainCode: "${chainCode}"
                     ${ (offset!==undefined) ? `, offset: "${offset}"` : '' }
@@ -171,12 +284,36 @@ export class GsClient {
                         result = data;
                         this.offset = Number(result.data.newEvent.metadata.offset) + 1;
                         this.setStat(result.data.newEvent.eventName);
-                        log.debug(`${result.data.newEvent.eventName}, offset ${result.data.newEvent.metadata.offset}, primaryKey ${result.data.newEvent.primaryKey}${(result.data.newEvent.hotelId) ? `, HotelID: ${result.data.newEvent.hotelId}` : ''}, Created at: ${result.data.newEvent.timestamp}`);
+                        let event = result.data
+                        if (this.env.SEGMENT_CONVERSION) {
+                            try {
+                                event = simplifyEvent(result.data, this.env)
+                            } catch (error) {
+                                log.error(error);
+                            }
+                        }
+                        log.silly(JSON.stringify(event));
+                        if (this.kafkaProducer !== undefined) {
+                            this.kafkaProducer.send({
+                                topic: this.env.KAFKA_TOPIC,
+                                acks: 1,
+                                compression: CompressionTypes.GZIP,
+                                messages: [{
+                                    key: result.data.newEvent.metadata.uniqueEventId,
+                                    value: JSON.stringify(event)
+                                }]
+                            });
+                        }
+                        if (this.env.DUMP_TO_FILE && this.json_file !== undefined)
+                            writeSync(this.json_file, JSON.stringify(event));
                     },
                     error: (error) => {
                         reject(error);
                     },
-                    complete: () => resolve(result)
+                    complete: () => {
+                        log.silly('Connection Completed');
+                        resolve(result)
+                    }
                 });
             }
         });
@@ -218,8 +355,7 @@ export class GsClient {
         log.info(`${this.windowCount} events processed in ${seconds} second window`);
         console.table(this.statsSummary);
         if (this.env.TIME_BUCKET !== undefined) {
-            const  avg =  Math.round(Object.values(this.stats).reduce((prev: number, curr: number) => prev + curr) / Object.values(this.stats).length);
-            this.stats['AVERAGE'] = avg;
+            this.stats['AVERAGE'] = Math.round(Object.values(this.stats).reduce((prev: number, curr: number) => prev + curr) / Object.values(this.stats).length);
             console.table(this.stats);
         }
         this.stats = {};
@@ -227,37 +363,42 @@ export class GsClient {
         this.windowCount = 0;
     }
 
-    public async start(): Promise<void> {
-        let client: Client = this.getClient();
-
-        const initiate = async() => {
-            log.debug('Initiating a new connection');
-            await this.disposeAndTerminate(client);
-            this.printAndClearStatsIfAny();
-            log.debug(`Connecting in ${this.env.TIMER} ms`);
+    public async startConsuming (reconnect: boolean = false, reason: string = '') {
+        this.terminateClient(`Refreshing connection with new token`);
+        if (reconnect) {
+            log.debug(`Refreshing an existing connection in ${this.env.TIMER}ms (${reason})`);
             await this.delay(this.env.TIMER);
-            client = this.getClient();
-            try {
-                await this.subscribe(client);
-            } catch (error) {
-                log.error(error);
-            }
-        };
+        } else {
+            log.debug('Initiating a new connection');
+        }
+        this.client = this.getClient();
+        if (this.kafka)
+            this.kafkaProducer = this.getProducer(this.kafka);
+        try {
+            await this.subscribe(this.client);
+        } catch (error) {
+            log.error(error);
+            log.debug(`Retrying in ${this.env.DELAY_BEFORE_RECONNECT} milliseconds`);
+            setTimeout(() => this.startConsuming(true), this.env.DELAY_BEFORE_RECONNECT);
+        }
+    }
 
-        const stop = async() => {
-            log.debug('Stopping the connection');
-            await this.disposeAndTerminate(client);
-            this.delay(this.env.DELAY_BEFORE_RECONNECT);
-            try {
-                process.exit(0);
-            } catch (error) {
-                log.error(error);
-            }
-        };
+    public async stopConsuming (reconnect: boolean = false) {
+        try {
+            if (!reconnect) this.terminateClient('Application stopped by user');
+            process.exit(0);
+        } catch (error) {
+            log.error(error);
+        }
+    }
 
-        setImmediate(() => initiate());
-        setInterval(() => {initiate();}, this.env.TOKEN_EXPIRY);
-        setInterval(() => {stop();}, this.env.RUN_FOR);
+    public async start(): Promise<void> {
+        this.client = undefined;
+        setImmediate(() => this.startConsuming(false));
+        setInterval(() => {this.startConsuming(true);}, this.env.TOKEN_EXPIRY);
+        if (this.env.RUN_FOR > 0) {
+            setInterval(() => {this.stopConsuming(false);}, this.env.RUN_FOR);
+        }
     }
 
     private async disposeAndTerminate(client: Client) {
