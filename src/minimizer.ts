@@ -70,13 +70,18 @@ export function simplifyEvent(data: any, env: Environment): unknown {
     new_properties['action_instance_id'] = parseInt(data.newEvent.actionInstanceId);
 
     if (new_properties['comments']) {
-        let newComments: any[] = [];
-        new_properties['comments'].forEach((comment: any, index: number) => {
-            newComments.push(comment.replaceAll('\n',' ').replaceAll('&quot;;','').replaceAll('&quot;',''))
-        })
-        new_properties['comments'] = newComments;
+        if (Array.isArray(new_properties['comments'])) {
+            let newComments: any[] = [];
+            new_properties['comments'].forEach((comment: any) => {
+                if (typeof comment === 'string') {
+                    newComments.push(comment.replaceAll('\n', ' ').replaceAll('&quot;;', '').replaceAll('&quot;', ''));
+                } else {
+                    newComments.push(comment);
+                }
+            });
+            new_properties['comments'] = newComments;
+        }
     }
-
     // parse DateTime from "28-APR-24 06.18.59.028027 AM"
     let parts = data.newEvent.timestamp.replaceAll('.','-').replaceAll(' ','-').split('-');
     let aDate = new Date(parseInt('20' + parts[2]), monthIndex.indexOf(parts[1]), parseInt(parts[0]), parts[7] == 'PM' ? parseInt(parts[3]) + 12: parseInt(parts[3]), parseInt(parts[4]), parseInt(parts[5]), parseInt(parts[6])/1000);
@@ -97,4 +102,46 @@ export function simplifyEvent(data: any, env: Environment): unknown {
     };
 }
 
-// console.log(simplifyJSON(sample_json));
+// Uncomment for testing simplifyEvent against an event loaded from eventTest.json
+// import * as fs from 'fs';
+// import dotenv from 'dotenv';
+// dotenv.config({path: process.env.ENVPATH || './.env'});
+// const env: Environment = {
+//     APIGW_URL: '',
+//     WS_URL: '',
+//     OAUTH_ENDPOINT: '',
+//     SUBS_ENDPOINT: '',
+//     APP_KEY: '',
+//     INTEGRATION_USER: '',
+//     INTEGRATION_PASSWORD: '',
+//     CLIENT_ID: '',
+//     CLIENT_SECRET: '',
+//     TOKEN_EXPIRY: 0,
+//     DELAY_BEFORE_RECONNECT: 0,
+//     RUN_FOR: 0,
+//     PING: 0,
+//     PING_TIMEOUT: 0,
+//     TIMER: 0,
+//     CHAIN: '',
+//     HOTELID: '',
+//     OFFSET: 0,
+//     DELTA: false,
+//     STATS: false,
+//     TIME_BUCKET: undefined,
+//     GRAPHQL_CLIENT_ID: undefined,
+//     DUMP_TO_FILE: false,
+//     SEGMENT_CONVERSION: true,
+//     STACK_VALUES: true,
+//     KAFKA_HOST: '',
+//     KAFKA_TOPIC: '',
+//     KAFKA_ENABLED: false,
+//     KAFKA_USER: '',
+//     KAFKA_PASSWORD: '',
+//     KAFKA_CLIENT_ID: '',
+// };
+// fs.readFile('eventTest2.json', 'utf8', (err, data) => { 
+//     if (err)
+//         { log.error("Error reading the file:", err); return; }
+
+//     log.debug(simplifyEvent(JSON.parse(data), env)); 
+// }); 

@@ -3,6 +3,7 @@ import { log } from './logger.js';
 import { Call } from './Call.js';
 import { Hasher } from './Hasher.js';
 import { GsClient, Environment } from './GsClient.js';
+import {readFileSync, existsSync} from "node:fs";
 
 dotenv.config({path: process.env.ENVPATH || './.env'});
 
@@ -24,7 +25,7 @@ const env: Environment = {
     TIMER: Number(process.env.TIMER) || 10000,
     CHAIN: process.env.CHAIN,
     HOTELID: process.env.HOTELID,
-    OFFSET: (process.env.OFFSET) ? Number(process.env.OFFSET) : undefined,
+    OFFSET: existsSync('offset.txt') ? Number(readFileSync('./offset.txt')) : (process.env.OFFSET ? Number(process.env.OFFSET) : undefined),
     DELTA: process.env.DELTA==='true',
     STATS: process.env.STATS==='true',
     TIME_BUCKET: process.env.TIME_BUCKET || undefined,
@@ -32,11 +33,11 @@ const env: Environment = {
     DUMP_TO_FILE: process.env.DUMP_TO_FILE==='true',
     SEGMENT_CONVERSION: process.env.SEGMENT_CONVERSION==='true',
     STACK_VALUES: process.env.STACK_VALUES==='true',
+    KAFKA_ENABLED: process.env.KAFKA_ENABLED==='false',
     KAFKA_HOST: process.env.KAFKA_HOST,
-    KAFKA_TOPIC: process.env.KAFKA_TOPIC || 'ohip-events',
-    KAFKA_ENABLED: process.env.KAFKA_ENABLED==='true',
     KAFKA_USER: process.env.KAFKA_USER,
     KAFKA_PASSWORD: process.env.KAFKA_PASSWORD,
+    KAFKA_TOPIC: process.env.KAFKA_TOPIC || 'ohip-events',
     KAFKA_CLIENT_ID: process.env.KAFKA_CLIENT_ID || 'gs-client',
 };
 

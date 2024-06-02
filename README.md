@@ -9,7 +9,6 @@ Sample GraphQL Streaming client for the [Oracle Hospitality Integration Platform
   - [Installation](#installation)
   - [Configuration](#configuration)
   - [Run](#run)
-  - [To-do](#to-do)
   - [License](#license)
   - [Disclaimer](#disclaimer)
 
@@ -100,6 +99,20 @@ STATS=true
 TIME_BUCKET=SECOND
 # Run streaming client for following time before shutting it down
 RUN_FOR=7080000
+# Export events to events.json file
+DUMP_TO_FILE=false
+# If true converts key value pairs to explicit object e.g.  "elementName": "FIRST NAME" becomes first_name
+SEGMENT_CONVERSION=true
+# If true converts old value and new value into array for the element
+# e.g. first_name: ['new value','old value']. If false, creates two elements first_name and first_name_was.
+STACK_VALUES=true
+# If set to true, events will be pushed to Kafka. Make sure to set host, credentials, topic and client id according to your environment
+KAFKA_ENABLED=false
+# KAFKA_HOST=
+# KAFKA_USER=
+# KAFKA_PASSWORD=
+# KAFKA_TOPIC=ohip-events
+# KAFKA_CLIENT_ID=gs-client
 ```
 
 > To use an environment file other than `.env` set the environment variable `ENVPATH` to the relative path of the env file. E.g. `export ENVPATH=./dev.env`
@@ -117,14 +130,6 @@ To run in development mode, execute
 ```bash
 npm run dev
 ```
-
-## To-do
-
-The following features are in the backlog of this project:
-
-- Packaged as a container with multiple deployment options (docker compose and kubernetes)
-- Pluggable target transports such as Console (currently only one supported), REST endpoint, database
-- Unit tests
 
 ## License
 

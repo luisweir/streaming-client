@@ -4,7 +4,7 @@ import { Client, createClient as createWSClient, SubscribePayload } from 'graphq
 import { Call } from './Call.js';
 import { simplifyEvent } from './minimizer.js';
 import { v4 as uuidv4 } from 'uuid';
-import {openSync, readFileSync, writeSync} from "node:fs";
+import {openSync, writeSync} from "node:fs";
 import {CompressionTypes, Kafka, KafkaConfig} from 'kafkajs';
 
 enum bucketTypes {
@@ -41,14 +41,14 @@ export interface Environment {
     TIME_BUCKET: string | undefined;
     GRAPHQL_CLIENT_ID: string | undefined;
     DUMP_TO_FILE: boolean;
-    KAFKA_HOST: string | undefined;
-    KAFKA_TOPIC: string | undefined;
-    KAFKA_ENABLED: boolean;
-    KAFKA_USER: string | undefined;
-    KAFKA_PASSWORD: string | undefined;
-    KAFKA_CLIENT_ID: string | undefined;
     SEGMENT_CONVERSION: boolean;
     STACK_VALUES: boolean;
+    KAFKA_ENABLED: boolean;
+    KAFKA_HOST: string | undefined;
+    KAFKA_USER: string | undefined;
+    KAFKA_PASSWORD: string | undefined;
+    KAFKA_TOPIC: string | undefined;
+    KAFKA_CLIENT_ID: string | undefined;
 }
 
 export const errorCodeMappings: { [id: string] : string; } = {
@@ -96,14 +96,6 @@ export class GsClient {
 
     public constructor(env: Environment, wsUrl: string, oauthUrl: string, oauthOptions: OAuthOptions, call: Call) {
         this.offset = env.OFFSET;
-        if (this.offset === undefined) {
-            try {
-                this.offset = Number(readFileSync('./offset.txt'));
-                log.debug(`Continue from saved offset: ${this.offset}`)
-            } catch {
-                this.offset = undefined;
-            }
-        }
         this.env = env;
         this.wsUrl = wsUrl;
         this.oauthUrl = oauthUrl;
@@ -113,6 +105,9 @@ export class GsClient {
         this.statsSummary = {};
         this.stats = {};
         this.kafka = undefined;
+
+        if (this.env.DUMP_TO_FILE)
+            this.json_file = openSync('./events.json','w');
 
         if (this.env.KAFKA_ENABLED && this.env.KAFKA_HOST) {
             let kafkaConfig: KafkaConfig = {
@@ -129,10 +124,6 @@ export class GsClient {
             this.kafka = new Kafka(kafkaConfig)
             this.kafkaProducer = this.getProducer(this.kafka);
         }
-
-        if (this.env.DUMP_TO_FILE)
-            this.json_file = openSync('./events.json','w');
-
         this.registerShutdownHook(); // make sure to dispose and terminate the client on shutdown
     }
 

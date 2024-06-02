@@ -8,5 +8,5 @@ temp/
 *.env
 .npmrc
 package-lock.json
-/events*.json
+/event*.json
 /offset.txt
