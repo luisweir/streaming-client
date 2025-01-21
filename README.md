@@ -68,9 +68,13 @@ touch .env
 APIGW_URL=
 # OHIP websocket gateway URL. Normally similar to API GW but with WS protocol
 WS_URL=
+# Endpoints SSD or OCIM. If not present assumes SSD **NEW**
+# OAUTH_TYPE=
 # Endpoints
 OAUTH_ENDPOINT=/oauth/v1/tokens
 SUBS_ENDPOINT=/subscriptions
+# Required only for OCIM environments **NEW** default is same value provided below
+# OAUTH_SCOPE=urn:opc:hgbu:ws:__myscopes__
 # OHIP dev portal app key
 APP_KEY=
 # SSD integration username/password
@@ -79,6 +83,8 @@ INTEGRATION_PASSWORD=
 # OHIP dev portal environment credentials
 CLIENT_ID=
 CLIENT_SECRET=
+# OCIM Enterprise ID. Set only for OCIM environments
+# ENTERPRISE_ID=
 # OAuth token expiry timeframe. Required to refresh token before it expires and connection is interrupted
 TOKEN_EXPIRY=3540000
 # Frequency to ping server

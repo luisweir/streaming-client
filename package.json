@@ -2,25 +2,21 @@
    "name": "streaming-client",
    "version": "1.0.0",
    "description": "sample streaming client for OHIP",
-   "exports": "./build/run.js",
-   "type": "module",
-   "engines": {
-      "node": ">=14.16"
-   },
+   "exports": "./dist/run.js",
    "scripts": {
       "lint": "eslint -c .eslintrc --ext .ts ./src",
       "lint-fix": "eslint -c .eslintrc --ext .ts ./src --fix ",
       "postinstall": "npx tsc",
-      "dev": "tsc-watch --onSuccess \"node ./build/app.js\"",
-      "start": "npx tsc && node --max-old-space-size=8192 ./build/app.js"
+      "dev": "tsc-watch --onSuccess \"node ./dist/app.js\"",
+      "start": "npx tsc && node --max-old-space-size=8192 ./dist/app.js"
    },
    "author": "Luis Weir",
    "license": "ISC",
    "dependencies": {
       "@types/node": "^18.11.0",
       "@types/ws": "^8.5.3",
+      "axios": "^1.7.9",
       "dotenv": "^16.0.3",
-      "got": "^12.5.2",
       "graphql-ws": "^5.11.2",
       "kafkajs": "^2.2.4",
       "npm": "^10.6.0",

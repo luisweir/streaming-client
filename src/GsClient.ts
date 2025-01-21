@@ -20,13 +20,16 @@ interface IStrIndex {
 export interface Environment {
     APIGW_URL: string;
     WS_URL: string;
+    OAUTH_TYPE: string;
     OAUTH_ENDPOINT: string;
+    OAUTH_SCOPE: string;
     SUBS_ENDPOINT: string;
     APP_KEY: string;
     INTEGRATION_USER: string;
     INTEGRATION_PASSWORD: string;
     CLIENT_ID: string;
     CLIENT_SECRET: string;
+    ENTERPRISE_ID: string;
     TOKEN_EXPIRY: number;
     DELAY_BEFORE_RECONNECT: number;
     RUN_FOR: number;
@@ -190,7 +193,8 @@ export class GsClient {
                 }
                 return {
                     'Authorization': `Bearer ${token}`,
-                    'x-app-key': `${this.env.APP_KEY}`
+                    'x-app-key': `${this.env.APP_KEY}`,
+                    'enterpriseId': `${this.env.ENTERPRISE_ID}`
                 };
             },
             shouldRetry: () => true,

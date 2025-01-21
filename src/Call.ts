@@ -1,28 +1,29 @@
+// Call.ts
 import { log } from './logger.js';
-import got, { HTTPError } from 'got';
+import axios, { AxiosError } from 'axios';
 
 export class Call {
 
     // HTTP invoker
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     public async call(url: string, options: any): Promise<any> {
-
-        const response = await got(url, options).json()
-            .catch(err => {
-                const error = {
-                    'httpStatusCode' : (err as HTTPError).response.statusCode,
-                    'msg' : (err as HTTPError).response.statusMessage
-                };
-                log.trace(err);
-                throw error;
-            })
-            .then((res: any) => {
-                return res;
+        try {
+            const response = await axios({
+                url,
+                ...options
             });
-        return response;
+            return response.data;
+        } catch (err) {
+            const error = {
+                'httpStatusCode': (err as AxiosError).response?.status,
+                'msg': (err as AxiosError).response?.statusText,
+                'reason': (err as AxiosError).response?.data
+            };
+            // log.trace(err);
+            throw error;
+        }
     }
 
-    public async fetchToken(url: string, options: any){
+    public async fetchToken(url: string, options: any) {
         try {
             log.debug(`Obtaining access token from ${url}`);
             const token = await this.call(url, options);
