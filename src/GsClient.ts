@@ -398,7 +398,7 @@ export class GsClient {
 
     private async disposeAndTerminate(client: Client) {
         await client.dispose();
-        this.activeSocket?.terminate();
+        // this.activeSocket?.terminate();
     }
 
     private printAndClearStatsIfAny() {
