@@ -115,6 +115,7 @@ export class GsClient {
         if (this.env.KAFKA_ENABLED && this.env.KAFKA_HOST) {
             let kafkaConfig: KafkaConfig = {
                 brokers: this.env.KAFKA_HOST.split(','),
+                ssl: true,
                 clientId: 'ohip-shovel'
             };
             if (this.env.KAFKA_USER !== undefined && this.env.KAFKA_PASSWORD !== undefined) {
