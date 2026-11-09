@@ -36,7 +36,7 @@ const env: Environment = {
     DUMP_TO_FILE: process.env.DUMP_TO_FILE === 'true',
     SEGMENT_CONVERSION: process.env.SEGMENT_CONVERSION === 'true',
     STACK_VALUES: process.env.STACK_VALUES === 'true',
-    KAFKA_ENABLED: process.env.KAFKA_ENABLED === 'false',
+    KAFKA_ENABLED: process.env.KAFKA_ENABLED === 'true',
     KAFKA_HOST: process.env.KAFKA_HOST,
     KAFKA_USER: process.env.KAFKA_USER,
     KAFKA_PASSWORD: process.env.KAFKA_PASSWORD,
