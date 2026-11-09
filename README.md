@@ -100,7 +100,8 @@ CHAIN=
 # (Optional) Enter true to omit old and new values which are similar. Default is false
 # DELTA=true
 # Log level options: silly, trace, debug, info, warn, error, fatal
-LOGLEVEL=debug
+# For production, use info or a less verbose level (warn, error, or fatal).
+LOGLEVEL=info
 # Set Stats. true or false. Default is false.
 STATS=true
 # Stat bucket: HOUR, MINUTE (default) or SECOND. If not set time bucket won't be displayed, only summary.
@@ -114,7 +115,7 @@ SEGMENT_CONVERSION=true
 # If true converts old value and new value into array for the element
 # e.g. first_name: ['new value','old value']. If false, creates two elements first_name and first_name_was.
 STACK_VALUES=true
-# If set to true, events will be pushed to Kafka. Make sure to set host, credentials, topic and client id according to your environment
+# If set to true, events will be pushed to your local Kafka instance, which [is recommended](https://docs.oracle.com/en/industries/hospitality/integration-platform/stmig/c_scaling_recommendations.htm#_7._scaling_recommendations__section_j5q_zly_qhc) to avoid choking database connections. Make sure to set host, credentials, topic and client id according to your environment
 KAFKA_ENABLED=false
 # KAFKA_HOST=
 # KAFKA_USER=
@@ -122,6 +123,10 @@ KAFKA_ENABLED=false
 # KAFKA_TOPIC=ohip-events
 # KAFKA_CLIENT_ID=gs-client
 ```
+
+Kafka connections require TLS and verify the broker certificate. For brokers using a private CA, configure Node.js to trust it, for example with `NODE_EXTRA_CA_CERTS`. `KAFKA_ENABLED=true` enables forwarding; omit it or set it to `false` to disable forwarding.
+
+The default log level is `silly` if `LOGLEVEL` is not set. Set `LOGLEVEL=info` or a less verbose level in production: `silly` logs credentials, access tokens, and event data.
 
 > To use an environment file other than `.env` set the environment variable `ENVPATH` to the relative path of the env file. E.g. `export ENVPATH=./dev.env`
 
